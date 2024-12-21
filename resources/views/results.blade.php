@@ -7,28 +7,31 @@
 <div class="container my-5">
     <h1 class="text-center mb-4">Результаты поиска</h1>
 
+    <h2>Отели</h2>
     <table class="table table-striped table-bordered">
         <thead>
         <tr>
             <th>Отель</th>
-            <th>Тип номера</th>
-            <th>Квота</th>
+            <th>Группа отелей</th>
+            <th>Цена</th>
             <th>Описание</th>
         </tr>
         </thead>
         <tbody>
-        @forelse ($roomTypes as $roomType)
+        @if($response && !$response['error'])
+        @foreach($response['HotelGroups'] as $hotelGroup)
             <tr>
-                <td>{{ $roomType->hotel->remark }}</td>
-                <td>{{ $roomType->remark }}</td>
-                <td>{{ $roomType->quota }}</td>
-                <td>{{ $roomType->description }}</td>
+                <td>{{ $hotelGroup['Name'] }}</td>
+                <td>{{ $hotelGroup['HotelId'] }}</td>
+                <td>{{ $response['TotalAccommodationPrice'] }}</td>
+                <td>{{ $hotelGroup['Code'] }}</td>
             </tr>
-        @empty
+        @endforeach
+        @else
             <tr>
                 <td colspan="4" class="text-center">Нет доступных номеров</td>
             </tr>
-        @endforelse
+        @endif
         </tbody>
     </table>
 

@@ -8,6 +8,7 @@
     <div class="card p-4 shadow-sm">
         <h1 class="text-center mb-4">Поиск номеров</h1>
         <form action="{{ route('hotels.search') }}" method="POST">
+            @csrf
             <div class="mb-3">
                 <label for="hotel" class="form-label">Выберите отель:</label>
                 <select id="hotel" name="hotel_id" class="form-select" required>

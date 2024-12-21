@@ -6,9 +6,11 @@ use App\Models\Board;
 use App\Models\Hotel;
 use App\Models\Region;
 use App\Models\RoomType;
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Http\Request;
 
 class MaiApiService
 {
@@ -43,6 +45,61 @@ class MaiApiService
         } catch (RequestException $e) {
             return ['error' => $e->getMessage()];
         }
+    }
+
+    public function hotelPriceSearch(array $data): array
+    {
+        $authResponse = $this->authenticate();
+        if (isset($authResponse['error'])) {
+            return ['error' => 'Authentication failed: ' . $authResponse['error']];
+        }
+        if (!isset($authResponse['RecId'])) {
+            return ['error' => 'RecId not found in authentication response'];
+        }
+        $operatorId = $authResponse['RecId'];
+        $hotel = Hotel::where('id_hotel', $data['hotel_id'])->first();
+        if (!$hotel) {
+            return ['error' => 'Hotel not found'];
+        }
+        $roomTypes = RoomType::where('hotel_id', $hotel->id_hotel)->get();
+        if ($roomTypes->isEmpty()) {
+            return ['error' => 'No room types found for the hotel'];
+        }
+        $roomTypeId = $roomTypes->first()->id_room;
+        $boardCode = $roomTypes->first()->boards()->first()->code;
+        $responseData = [
+            'OperatorId' => $operatorId,
+            'RegionId' => $hotel->region_id,
+            'BeginDate' => Carbon::parse($data['check_in_date'])->toIso8601String(),
+            'EndDate' => Carbon::parse($data['check_out_date'])->toIso8601String(),
+            'HotelId' => $data['hotel_id'],
+            'Pax' => $data['guests'],
+            'Childs' => 0,
+            'ChildInfo' => [],
+            'RemainderQuotaCheck' => true,
+            'SaleDate' => Carbon::now()->toIso8601String(),
+            'IsAvailable' => true,
+            'WithoutInformation' => true,
+            'RoomTypeId' => $roomTypeId,
+            'MainRegionId' => $hotel->main_region_id,
+            'SubregionId' => $hotel->region_id,
+            'BoardCode' => $boardCode,
+            'HotelList' => []
+        ];
+
+        try {
+            $url = "api/Integratiion/HotelPriceSearch";
+            $response = $this->client->post($url, [
+                'json' => $responseData,
+                'headers' => [
+                    'Accept' => 'application/json',
+                ],
+            ]);
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            return ['error' => $e->getMessage()];
+        }
+
     }
 
     public function fetchAndStoreRegions()
