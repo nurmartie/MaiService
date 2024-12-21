@@ -1,0 +1,55 @@
+services:
+  web:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    tty: true
+    ports:
+      - '8080:8080'
+    volumes:
+      - .:/var/www/MaiService
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - mai_net
+    depends_on:
+      - db
+      - app
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - .:/var/www/MaiService
+      - /var/www/MaiService/vendor
+      - /var/www/MaiService/docker/scripts
+    networks:
+      - mai_net
+    depends_on:
+      - db
+  db:
+    container_name: db
+    build:
+      context: .
+      dockerfile: ./docker/database/Dockerfile
+    restart: unless-stopped
+    tty: true
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mai_db:/var/lib/mysql
+    networks:
+      - mai_net
+    ports:
+      - '3306:3306'
+networks:
+  mai_net:
+    external: true
+volumes:
+  mai_db:
+    external: true
